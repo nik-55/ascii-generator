@@ -1,0 +1,10 @@
+services:
+  backend:
+    image: t2asciiart
+    container_name: t2asciiart
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "${BACKEND_PORT}:8000"
+ 
