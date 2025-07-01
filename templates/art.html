@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Art</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-size: 6px;
+        }
+        .grid {
+            background-color: black;
+            display: grid;
+            grid-template-columns: repeat(128, 1fr);
+            gap: 0.2px;
+        }
+
+        .grid-item {
+            padding: 0.2px;
+            text-align: center;
+            color: white;
+        }
+    </style>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+
+<body class="min-h-screen flex items-center justify-center">
+    <div class="grid" id="artGrid">
+        {% for row in range(128) %}
+        {% for col in range(128) %}
+        <div class="grid-item" data-char="{{ art[row][col] }}" data-clr="rgb({{clr_arr[row][col][0]}}, {{clr_arr[row][col][1]}}, {{clr_arr[row][col][2]}})">
+            &nbsp;
+        </div>
+        {% endfor %}
+        {% endfor %}
+    </div>
+
+    <script>
+        const gscale = "$@B%8&WM#*oahkbdpqwmZO0QLCJUYXzcvunxrjft/\\|()1{}[]?-_+~<>i!lI;:,\"^`'. ";
+        const delay = 1;
+
+        async function animateGrid() {
+            const gridItems = document.querySelectorAll('.grid-item');
+
+            for (let i = 0; i < gridItems.length; i++) {
+                const item = gridItems[i];
+                const targetChar = item.getAttribute('data-char') || ' ';
+                item.textContent = targetChar;
+
+                if ((i + 1) % 128 == 0) {
+                    await new Promise(res => setTimeout(res, delay));
+                }
+            }
+
+            await new Promise(res => setTimeout(res, delay));
+
+            for (let i = 0; i < gridItems.length; i++) {
+                const item = gridItems[i];
+                const clr = item.getAttribute('data-clr')
+                item.style.color = clr
+
+                if ((i + 1) % 128 == 0) {
+                    await new Promise(res => setTimeout(res, delay));
+                }
+            }
+        }
+
+        window.onload = animateGrid;
+    </script>
+</body>
+
+</html>
