@@ -38,6 +38,9 @@ async def gallery(request: Request):
     dirs = os.listdir(dir_path)
 
     for day_dir in dirs:
+        if not day_dir.isdigit():
+            continue
+
         day_path = os.path.join(dir_path, day_dir)
 
         for img_dir in os.listdir(day_path):
@@ -46,8 +49,8 @@ async def gallery(request: Request):
                 data_json = json.load(f)
                 prompt = data_json["prompt"]
 
-            original_img_path_suffix = f"/media/{day_dir}/{img_dir}/img.png"
-            art_html_path_suffix = f"/media/{day_dir}/{img_dir}/art.html"
+            original_img_path_suffix = f"/gallery-view/{day_dir}/{img_dir}/img.png"
+            art_html_path_suffix = f"/gallery-view/{day_dir}/{img_dir}/art.html"
 
             data.append(
                 {
