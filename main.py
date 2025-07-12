@@ -1,4 +1,5 @@
 import datetime
+import json
 import requests
 
 from fastapi import FastAPI, Request
@@ -7,6 +8,7 @@ from pydantic import BaseModel
 from pydantic_settings import BaseSettings, SettingsConfigDict
 from prompt import modify_system_prompt
 from fastapi.responses import Response
+from cache import cache
 
 
 class Settings(BaseSettings):
@@ -23,6 +25,39 @@ templates = Jinja2Templates(directory="templates")
 @app.get("/hello")
 async def hello(request: Request):
     return "Ok"
+
+
+@app.get("/gallery")
+@cache(seconds=200)
+async def gallery(request: Request):
+    import os
+
+    dir_path = f"./media"
+
+    data = []
+    dirs = os.listdir(dir_path)
+
+    for day_dir in dirs:
+        day_path = os.path.join(dir_path, day_dir)
+
+        for img_dir in os.listdir(day_path):
+            img_path = os.path.join(day_path, img_dir)
+            with open(os.path.join(img_path, "data.json"), "r") as f:
+                data_json = json.load(f)
+                prompt = data_json["prompt"]
+
+            original_img_path_suffix = f"/media/{day_dir}/{img_dir}/img.png"
+            art_html_path_suffix = f"/media/{day_dir}/{img_dir}/art.html"
+
+            data.append(
+                {
+                    "prompt": prompt,
+                    "original_img_path": original_img_path_suffix,
+                    "art_html_path": art_html_path_suffix,
+                }
+            )
+
+    return data
 
 
 @app.get("/")
@@ -99,8 +134,15 @@ async def generate_ascii_art(
     dir_path = f"./media/{day_of_month}/{img_id}"
 
     os.makedirs(f"{dir_path}", exist_ok=True)
-    with open(f"{dir_path}/data.txt", "w") as f:
-        f.write(f"Original Prompt: {prompt}\n\n\nModified Prompt: {modified_prompt}\n")
+    with open(f"{dir_path}/data.json", "w") as f:
+        f.write(
+            json.dumps(
+                {
+                    "prompt": prompt,
+                    "modified_prompt": modified_prompt,
+                }
+            )
+        )
 
     data = res.json()
 
