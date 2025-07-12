@@ -6,6 +6,7 @@ from fastapi.templating import Jinja2Templates
 from pydantic import BaseModel
 from pydantic_settings import BaseSettings, SettingsConfigDict
 from prompt import modify_system_prompt
+from fastapi.responses import Response
 
 
 class Settings(BaseSettings):
@@ -33,8 +34,26 @@ class PromptIn(BaseModel):
     prompt: str
 
 
+@app.middleware("http")
+async def rate_limiter(request: Request, call_next):
+    if request.url.path.startswith("/generate"):
+        from rate import is_rate_limited
+
+        ip = request.headers.get("X-Forwarded-For", request.client.host)
+
+        if is_rate_limited(ip):
+            return Response(
+                "Rate limit exceeded ;-; Please try again later.",
+            )
+
+    return await call_next(request)
+
+
 @app.post("/generate/")
-async def generate_ascii_art(request: Request, promptIn: PromptIn):
+async def generate_ascii_art(
+    request: Request,
+    promptIn: PromptIn,
+):
     import uuid
     import base64
     import os
@@ -99,6 +118,12 @@ async def generate_ascii_art(request: Request, promptIn: PromptIn):
     art, clr_array = ascii_generator(f"{dir_path}/img.png")
     art_arr = [list(line) for line in art.split("\n")]
 
-    return templates.TemplateResponse(
-        "art.html", {"request": request, "art": art_arr, "clr_arr": clr_array}
-    )
+    context = {"request": request, "art": art_arr, "clr_arr": clr_array}
+
+    html_str = templates.get_template("art.html").render(context)
+    html_str = html_str.replace("await new Promise(res => setTimeout(res, delay));", "")
+
+    with open(f"{dir_path}/art.html", "w") as f:
+        f.write(html_str)
+
+    return templates.TemplateResponse("art.html", context)

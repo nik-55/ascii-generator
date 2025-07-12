@@ -4,31 +4,42 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Art</title>
+    <title>ASCII Art</title>
     <style>
         * {
             margin: 0;
             padding: 0;
             box-sizing: border-box;
-            font-size: 6px;
         }
+    
+        body {
+            background-color: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            font-family: 'Courier New', Courier, monospace;
+        }
+        
         .grid {
-            background-color: black;
+            background-color: #000;
             display: grid;
             grid-template-columns: repeat(128, 1fr);
             gap: 0.2px;
+            width: 90vw;
+            max-width: 1280px;
         }
 
         .grid-item {
             padding: 0.2px;
             text-align: center;
             color: white;
+            font-size: 6px;
         }
     </style>
-    <script src="https://cdn.tailwindcss.com"></script>
 </head>
 
-<body class="min-h-screen flex items-center justify-center">
+<body>
     <div class="grid" id="artGrid">
         {% for row in range(128) %}
         {% for col in range(128) %}
@@ -40,7 +51,6 @@
     </div>
 
     <script>
-        const gscale = "$@B%8&WM#*oahkbdpqwmZO0QLCJUYXzcvunxrjft/\\|()1{}[]?-_+~<>i!lI;:,\"^`'. ";
         const delay = 1;
 
         async function animateGrid() {
@@ -51,7 +61,7 @@
                 const targetChar = item.getAttribute('data-char') || ' ';
                 item.textContent = targetChar;
 
-                if ((i + 1) % 128 == 0) {
+                if ((i + 1) % 128 === 0) {
                     await new Promise(res => setTimeout(res, delay));
                 }
             }
@@ -60,10 +70,10 @@
 
             for (let i = 0; i < gridItems.length; i++) {
                 const item = gridItems[i];
-                const clr = item.getAttribute('data-clr')
-                item.style.color = clr
+                const clr = item.getAttribute('data-clr');
+                item.style.color = clr;
 
-                if ((i + 1) % 128 == 0) {
+                if ((i + 1) % 128 === 0) {
                     await new Promise(res => setTimeout(res, delay));
                 }
             }

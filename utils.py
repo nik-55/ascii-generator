@@ -13,15 +13,13 @@ def ascii_generator(img_path: str):
     clr_array = np.array(clr)
     gray_array = np.array(gry)
 
+    st = ""
+
     for row in range(0, 128):
         for col in range(0, 128):
             temp = gray_array[row][col] // 3.7
-            gray_array[row][col] = 69 - temp
+            st = st + gscale[69 - int(temp)]
 
-    st = ""
-    for row in range(0, 128):
-        for col in range(0, 128):
-            st = st + gscale[gray_array[row][col]]
         st = st + "\n"
 
     return st, clr_array

@@ -10,11 +10,11 @@
 
 <body class="bg-gray-100 min-h-screen flex items-center justify-center">
   <div class="bg-white shadow-xl rounded-2xl p-8 w-[80%]">
-    <h1 class="text-2xl font-bold mb-4 text-gray-800 text-center">Generate ASCII</h1>
+    <h1 class="text-2xl font-bold mb-4 text-gray-800 text-center">Generate ASCII Art</h1>
     
     <textarea
       id="promptInput"
-      rows="10"
+      rows="6"
       placeholder="A lion sitting calmly on a flat rock with its mane flowing gently in the breeze and a simple moon behind it.
 A quiet mountain view with a few tall pine trees and a small river winding through the valley under clear skies.
 A large pirate ship with sails fully extended, floating on calm ocean waves with a skull flag waving above.
@@ -37,7 +37,11 @@ An astronaut in a bulky suit waving while standing on a cratered surface with Ea
     function sendPrompt() {
       const prompt = document.getElementById('promptInput').value;
       const responseBox = document.getElementById('responseBox');
+      const button = document.querySelector('button');
+      
       responseBox.textContent = "Loading...";
+      button.disabled = true;
+      button.textContent = "Generating..."; 
 
       fetch('/generate/', {
         method: 'POST',
@@ -59,6 +63,10 @@ An astronaut in a bulky suit waving while standing on a cratered surface with Ea
         .catch(error => {
           console.error('Error:', error);
           responseBox.textContent = "An error occurred. Check console.";
+        })
+        .finally(() => {
+          button.disabled = false;
+          button.textContent = "Generate";
         });
     }
   </script>
