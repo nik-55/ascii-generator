@@ -2,53 +2,66 @@
 <html lang="en">
 
 <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Generate Ascii</title>
-    <script src="https://cdn.tailwindcss.com"></script>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Generate Ascii</title>
+  <script src="https://cdn.tailwindcss.com"></script>
 </head>
 
 <body class="bg-gray-100 min-h-screen flex items-center justify-center">
-    <div class="bg-white shadow-xl rounded-2xl p-8 w-full max-w-md">
-        <h1 class="text-2xl font-bold mb-4 text-gray-800 text-center">Generate Ascii</h1>
-        <input type="text" id="promptInput" placeholder="Type your prompt here..."
-            class="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 mb-4" />
-        <button onclick="sendPrompt()"
-            class="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 rounded-lg transition duration-200">
-            Generate
-        </button>
-        <div id="responseBox" class="mt-6 text-sm text-gray-700 whitespace-pre-wrap"></div>
-    </div>
+  <div class="bg-white shadow-xl rounded-2xl p-8 w-[80%]">
+    <h1 class="text-2xl font-bold mb-4 text-gray-800 text-center">Generate ASCII</h1>
+    
+    <textarea
+      id="promptInput"
+      rows="10"
+      placeholder="A lion sitting calmly on a flat rock with its mane flowing gently in the breeze and a simple moon behind it.
+A quiet mountain view with a few tall pine trees and a small river winding through the valley under clear skies.
+A large pirate ship with sails fully extended, floating on calm ocean waves with a skull flag waving above.
+An old oak tree with thick branches stretching wide, surrounded by grass and a single swing hanging from a limb.
+A robot with square arms and glowing eyes standing alone on a hill, watching a small city far off in the distance.
+An astronaut in a bulky suit waving while standing on a cratered surface with Earth clearly visible in the sky.
+"
+      class="w-full p-4 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 mb-4 resize-none"
+    ></textarea>
 
-    <script>
-        function sendPrompt() {
-            const prompt = document.getElementById('promptInput').value;
-            const responseBox = document.getElementById('responseBox');
-            responseBox.textContent = "Loading...";
+    <button onclick="sendPrompt()"
+      class="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 rounded-lg transition duration-200">
+      Generate
+    </button>
 
-            fetch('/generate/', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({ prompt: prompt })
-            })
-                .then(response => {
-                    if (!response.ok) throw new Error('Request failed');
-                    return response.text()
-                })
-                .then(html=>{
-                    const blob = new Blob([html], {type: "text/html"})
-                    const url = URL.createObjectURL(blob)
-                    window.open(url, "_self")
-                    responseBox.textContent = "Generated";
-                })
-                .catch(error => {
-                    console.error('Error:', error);
-                    responseBox.textContent = "An error occurred. Check console.";
-                });
-        }
-    </script>
+    <div id="responseBox" class="mt-6 text-sm text-gray-700 whitespace-pre-wrap"></div>
+  </div>
+
+  <script>
+    function sendPrompt() {
+      const prompt = document.getElementById('promptInput').value;
+      const responseBox = document.getElementById('responseBox');
+      responseBox.textContent = "Loading...";
+
+      fetch('/generate/', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ prompt: prompt })
+      })
+        .then(response => {
+          if (!response.ok) throw new Error('Request failed');
+          return response.text();
+        })
+        .then(html => {
+          const blob = new Blob([html], { type: "text/html" });
+          const url = URL.createObjectURL(blob);
+          window.open(url, "_self");
+          responseBox.textContent = "Generated";
+        })
+        .catch(error => {
+          console.error('Error:', error);
+          responseBox.textContent = "An error occurred. Check console.";
+        });
+    }
+  </script>
 </body>
 
 </html>

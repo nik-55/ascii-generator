@@ -1,9 +1,11 @@
+import datetime
 import requests
 
 from fastapi import FastAPI, Request
 from fastapi.templating import Jinja2Templates
 from pydantic import BaseModel
 from pydantic_settings import BaseSettings, SettingsConfigDict
+from prompt import modify_system_prompt
 
 
 class Settings(BaseSettings):
@@ -33,22 +35,53 @@ class PromptIn(BaseModel):
 
 @app.post("/generate/")
 async def generate_ascii_art(request: Request, promptIn: PromptIn):
+    import uuid
+    import base64
+    import os
+
     prompt = promptIn.prompt
 
     if prompt is None:
         return "Empty prompt"
 
+    headers = {
+        "x-goog-api-key": settings.GEMINI_API_KEY,
+        "Content-Type": "application/json",
+    }
+
+    res_modified_prompt = requests.post(
+        "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent",
+        headers=headers,
+        json={
+            "contents": [{"parts": [{"text": f"{modify_system_prompt}\n\n{prompt}"}]}],
+        },
+    )
+
+    if res_modified_prompt.status_code != 200:
+        print(res_modified_prompt.text, flush=True)
+        return "Error occured ;-;"
+
+    modified_prompt = res_modified_prompt.json()["candidates"][0]["content"]["parts"][
+        0
+    ]["text"]
+
     res = requests.post(
         "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-preview-image-generation:generateContent",
-        headers={
-            "x-goog-api-key": settings.GEMINI_API_KEY,
-            "Content-Type": "application/json",
-        },
+        headers=headers,
         json={
-            "contents": [{"parts": [{"text": prompt}]}],
+            "contents": [{"parts": [{"text": modified_prompt}]}],
             "generationConfig": {"responseModalities": ["TEXT", "IMAGE"]},
         },
     )
+
+    img_id = str(uuid.uuid4())[:7]
+
+    day_of_month = datetime.datetime.now().day
+    dir_path = f"./media/{day_of_month}/{img_id}"
+
+    os.makedirs(f"{dir_path}", exist_ok=True)
+    with open(f"{dir_path}/data.txt", "w") as f:
+        f.write(f"Original Prompt: {prompt}\n\n\nModified Prompt: {modified_prompt}\n")
 
     data = res.json()
 
@@ -58,21 +91,12 @@ async def generate_ascii_art(request: Request, promptIn: PromptIn):
         print(e, flush=True)
         return "Error occured ;-;"
 
-    import uuid
-    import base64
-    import os
-    img_id = str(uuid.uuid4())[:7]
-
-    os.makedirs(f"./media/{img_id}")
-    with open(f"media/{img_id}/img.png", "wb") as f:
+    with open(f"{dir_path}/img.png", "wb") as f:
         f.write(base64.b64decode(base64_str))
-
-    with open(f"media/{img_id}/data.txt", "w") as f:
-        f.write(prompt)
 
     from utils import ascii_generator
 
-    art, clr_array = ascii_generator(f"media/{img_id}/img.png")
+    art, clr_array = ascii_generator(f"{dir_path}/img.png")
     art_arr = [list(line) for line in art.split("\n")]
 
     return templates.TemplateResponse(
