@@ -37,9 +37,11 @@
             font-size: 6px;
         }
     </style>
+     <script src="https://cdn.tailwindcss.com"></script>
 </head>
 
 <body>
+    <div>
     <div class="grid" id="artGrid">
         {% for row in range(128) %}
         {% for col in range(128) %}
@@ -50,6 +52,17 @@
         {% endfor %}
     </div>
 
+    <div class"mt-6">
+    <p>
+        <strong>Prompt:</strong> {{ prompt }}
+    </p>
+
+    <div class="text-sm font-mono mb-3">
+        <button class="bg-blue-600 text-white px-3 py-1 rounded hover:bg-blue-700 transition copy-btn"
+        data-copy="{{ascii_art_path}}">Copy</button>
+    </div>
+</div>
+</div>
     <script>
         const delay = 1;
 
@@ -78,6 +91,17 @@
                 }
             }
         }
+
+        document.querySelectorAll('.copy-btn').forEach(button => {
+            button.addEventListener('click', () => {
+                const pth = button.getAttribute('data-copy');
+                const text = `wget -qO- ${window.location.origin}${pth}`;
+                navigator.clipboard.writeText(text).then(() => {
+                    button.textContent = 'Copied!';
+                    setTimeout(() => (button.textContent = 'Copy'), 1500);
+                });
+            });
+        });
 
         window.onload = animateGrid;
     </script>

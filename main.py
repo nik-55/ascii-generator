@@ -57,6 +57,7 @@ async def gallery(request: Request):
                     "prompt": prompt,
                     "original_img_path": original_img_path_suffix,
                     "art_html_path": art_html_path_suffix,
+                    "ascii_art_path": f"/gallery-view/{day_dir}/{img_dir}/ascii_art.txt",
                 }
             )
 
@@ -160,15 +161,24 @@ async def generate_ascii_art(
 
     from utils import ascii_generator
 
-    art, clr_array = ascii_generator(f"{dir_path}/img.png")
+    art, clr_array, clr_str = ascii_generator(f"{dir_path}/img.png")
     art_arr = [list(line) for line in art.split("\n")]
 
-    context = {"request": request, "art": art_arr, "clr_arr": clr_array}
+    context = {
+        "request": request,
+        "art": art_arr,
+        "clr_arr": clr_array,
+        "prompt": prompt,
+        "ascii_art_path": f"/gallery-view/{day_of_month}/{img_id}/ascii_art.txt",
+    }
 
     html_str = templates.get_template("art.html").render(context)
     html_str = html_str.replace("await new Promise(res => setTimeout(res, delay));", "")
 
     with open(f"{dir_path}/art.html", "w") as f:
         f.write(html_str)
+
+    with open(f"{dir_path}/ascii_art.txt", "w") as f:
+        f.write(clr_str)
 
     return templates.TemplateResponse("art.html", context)
