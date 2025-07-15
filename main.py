@@ -58,6 +58,7 @@ async def gallery(request: Request):
                     "original_img_path": original_img_path_suffix,
                     "art_html_path": art_html_path_suffix,
                     "ascii_art_path": f"/gallery-view/{day_dir}/{img_dir}/ascii_art.txt",
+                    "art_iframe_html_path": f"/gallery-view/{day_dir}/{img_dir}/art-iframe.html",
                 }
             )
 
@@ -83,6 +84,7 @@ async def rate_limiter(request: Request, call_next):
         if is_rate_limited(ip):
             return Response(
                 "Rate limit exceeded ;-; Please try again later.",
+                status_code=429,
             )
 
     return await call_next(request)
@@ -173,7 +175,13 @@ async def generate_ascii_art(
     }
 
     html_str = templates.get_template("art.html").render(context)
+
+    with open(f"{dir_path}/art-show.html", "w") as f:
+        f.write(html_str)
+
     html_str = html_str.replace("await new Promise(res => setTimeout(res, delay));", "")
+
+    iframe_html_str = templates.get_template("art-iframe.html").render(context)
 
     with open(f"{dir_path}/art.html", "w") as f:
         f.write(html_str)
@@ -181,4 +189,7 @@ async def generate_ascii_art(
     with open(f"{dir_path}/ascii_art.txt", "w") as f:
         f.write(clr_str)
 
-    return templates.TemplateResponse("art.html", context)
+    with open(f"{dir_path}/art-iframe.html", "w") as f:
+        f.write(iframe_html_str)
+
+    return {"url": dir_path.replace("./media/", "/gallery-view/") + "/art-show.html"}

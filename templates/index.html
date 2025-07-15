@@ -15,10 +15,10 @@
     <textarea
       id="promptInput"
       rows="6"
-      placeholder="A lion sitting calmly on a flat rock with its mane flowing gently in the breeze and a simple moon behind it.
+      placeholder="Example Prompts:
+A lion sitting calmly on a flat rock with its mane flowing gently in the breeze and a simple moon behind it.
 A quiet mountain view with a few tall pine trees and a small river winding through the valley under clear skies.
 A large pirate ship with sails fully extended, floating on calm ocean waves with a skull flag waving above.
-An old oak tree with thick branches stretching wide, surrounded by grass and a single swing hanging from a limb.
 A robot with square arms and glowing eyes standing alone on a hill, watching a small city far off in the distance.
 An astronaut in a bulky suit waving while standing on a cratered surface with Earth clearly visible in the sky.
 "
@@ -39,7 +39,7 @@ An astronaut in a bulky suit waving while standing on a cratered surface with Ea
   </div>
 
   <script>
-    function sendPrompt() {
+    async function sendPrompt() {
       const prompt = document.getElementById('promptInput').value;
       const responseBox = document.getElementById('responseBox');
       const button = document.querySelector('button');
@@ -48,31 +48,38 @@ An astronaut in a bulky suit waving while standing on a cratered surface with Ea
       button.disabled = true;
       button.textContent = "Generating..."; 
 
-      fetch('/generate/', {
+      try {
+        const res = await fetch('/generate/', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'
         },
         body: JSON.stringify({ prompt: prompt })
       })
-        .then(response => {
-          if (!response.ok) throw new Error('Request failed');
-          return response.text();
-        })
-        .then(html => {
-          const blob = new Blob([html], { type: "text/html" });
-          const url = URL.createObjectURL(blob);
-          window.open(url, "_self");
-          responseBox.textContent = "Generated";
-        })
-        .catch(error => {
-          console.error('Error:', error);
-          responseBox.textContent = "An error occurred. Check console.";
-        })
-        .finally(() => {
+
+      console.log('Response:', res.status, res.statusText);
+
+        if (!res.ok || res.status !== 200) {
+          const mssg = await res.text() || "An error occurred ;-; please try again later.";
+          throw new Error(`${mssg} (${res.statusText}) (${res.status})`);
+        }
+
+        const data = await res.json();
+
+        const baseurl = window.location.origin;
+        const url = baseurl + data.url;
+        window.open(url, '_self');
+      }
+      catch (error) {
+        console.error('Error:', error);
+        responseBox.textContent = error.message || "An error occurred ;-; please try again later.";
+      }
+      finally {
           button.disabled = false;
           button.textContent = "Generate";
-        });
+          responseBox.textContent = "";
+      }
+
     }
   </script>
 </body>

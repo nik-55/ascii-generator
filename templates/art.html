@@ -41,8 +41,10 @@
 </head>
 
 <body>
+    <div class="absolute top-0 left-0 p-4">
+        <a href="/gallery-view/" class="text-blue-600 hover:underline">View Gallery</a>
     <div>
-    <div class="grid" id="artGrid">
+    <div class="grid mt-4" id="artGrid">
         {% for row in range(128) %}
         {% for col in range(128) %}
         <div class="grid-item" data-char="{{ art[row][col] }}" data-clr="rgb({{clr_arr[row][col][0]}}, {{clr_arr[row][col][1]}}, {{clr_arr[row][col][2]}})">

@@ -9,9 +9,11 @@
 </head>
 
 <body class="bg-gray-100 min-h-screen p-8">
-    <h1 class="text-3xl font-bold mb-6 text-center">Art Gallery</h1>
+    <a href="/">
+        <h1 class="text-3xl font-bold mb-6 text-center">Art Gallery</h1>
+    </a>
 
-    <div id="gallery" class="grid gap-6 grid-cols-2">
+    <div id="gallery" class="grid gap-6 grid-cols-3">
         <!-- Cards will be injected here -->
     </div>
 
@@ -32,7 +34,7 @@
                     card.innerHTML = `
             <div class="p-4">
               <div class="rounded-lg overflow-hidden border border-gray-200 mb-4">
-                <iframe src="${item.art_html_path}" class="w-full h-80" title="Artwork ${index + 1}"></iframe>
+                <iframe src="${item.art_iframe_html_path}" class="w-full h-80" title="Artwork ${index + 1}"></iframe>
               </div>
 
               <p class="text-lg font-medium text-gray-800 mb-2">${item.prompt}</p>
