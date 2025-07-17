@@ -1,4 +1,13 @@
-.venv
-.env
+*
 __pycache__
-media
+!uv.lock
+!utils.py
+!rate.py
+!pyproject.toml
+!prompt.py
+!main.py
+!lambda_function.py
+!cache.py
+!.python-version
+!templates/
+
