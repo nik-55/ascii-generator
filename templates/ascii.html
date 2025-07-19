@@ -59,6 +59,7 @@
             </div>
         </div>
         <script>
+            const delay = 1;
             const queryparams = new URLSearchParams(window.location.search);
             const key = queryparams.get('key');
             const s3_base_url = 'https://ascii-generator-123.s3.ap-south-1.amazonaws.com/gallery-view/';
@@ -91,12 +92,22 @@
                     const item = gridItems[i];
                     const targetChar = item.getAttribute('data-char') || ' ';
                     item.textContent = targetChar;
+
+                    if ((i + 1) % 128 === 0) {
+                        await new Promise(res => setTimeout(res, delay));
+                    }
                 }
+
+                await new Promise(res => setTimeout(res, delay));
 
                 for (let i = 0; i < gridItems.length; i++) {
                     const item = gridItems[i];
                     const clr = item.getAttribute('data-clr');
                     item.style.color = clr;
+
+                    if ((i + 1) % 128 === 0) {
+                        await new Promise(res => setTimeout(res, delay));
+                    }
                 }
             }
 

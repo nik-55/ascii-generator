@@ -3,8 +3,7 @@ from botocore.exceptions import BotoCoreError, ClientError
 
 import datetime
 
-aws_profile = "builder"
-session = Session(profile_name=aws_profile)
+session = Session()
 
 dynamodb = session.resource("dynamodb", region_name="ap-south-1")
 table = dynamodb.Table("RateLimitTable")

@@ -65,3 +65,105 @@ resource "aws_dynamodb_table" "rate-limit-table" {
     Mode = "builder"
   }
 }
+
+
+resource "aws_iam_role" "ascii-lambda-execution-role" {
+  name = "ascii_lambda_execution_role"
+  assume_role_policy = jsonencode({
+    "Version" : "2012-10-17",
+    "Statement" : [
+      {
+        "Effect" : "Allow",
+        "Principal" : {
+          "Service" : "lambda.amazonaws.com"
+        },
+        "Action" : "sts:AssumeRole"
+      }
+    ]
+    }
+
+  )
+}
+
+
+resource "aws_lambda_function" "ascii-lambda" {
+  function_name = "ascii-generator-function"
+  role          = aws_iam_role.ascii-lambda-execution-role.arn
+  handler       = "lambda_function.handler"
+
+  s3_bucket = aws_s3_bucket.ascii.id
+  s3_key    = "ascii-lambda.zip"
+
+  environment {
+    variables = {
+      GEMINI_API_KEY = var.gemini_api_key
+    }
+  }
+
+  runtime       = "python3.12"
+  architectures = ["x86_64"]
+  timeout       = 300
+}
+
+data "aws_iam_policy_document" "lambda-extra-policies-document" {
+  statement {
+    actions = [
+      "dynamodb:GetItem",
+      "dynamodb:PutItem"
+    ]
+    resources = [
+      aws_dynamodb_table.rate-limit-table.arn
+    ]
+    effect = "Allow"
+    sid    = "allowDynamoDBAccess"
+  }
+
+  statement {
+    actions = [
+      "s3:PutObject",
+      "s3:ListBucket"
+    ]
+    resources = [
+      aws_s3_bucket.ascii.arn,
+      "${aws_s3_bucket.ascii.arn}/*"
+    ]
+    effect = "Allow"
+    sid    = "allowS3Access"
+  }
+
+  statement {
+    actions = [
+      "logs:CreateLogGroup",
+      "logs:PutLogEvents",
+      "logs:CreateLogStream"
+    ]
+    resources = ["*"]
+    effect    = "Allow"
+    sid       = "allowCloudWatchLogsAccess"
+  }
+}
+
+resource "aws_iam_policy" "lambda-extra-policies" {
+  name = "ascii-lambda-extra-policies"
+
+  policy = data.aws_iam_policy_document.lambda-extra-policies-document.json
+}
+
+resource "aws_iam_role_policy_attachment" "ascii-lambda-policy-attachment" {
+  role       = aws_iam_role.ascii-lambda-execution-role.name
+  policy_arn = aws_iam_policy.lambda-extra-policies.arn
+}
+
+resource "aws_lambda_function_url" "ascii-lambda-url" {
+  function_name      = aws_lambda_function.ascii-lambda.function_name
+  authorization_type = "NONE"
+
+  cors {
+    allow_credentials = false
+    allow_origins     = ["*"]
+    allow_methods     = ["GET", "POST"]
+    allow_headers     = ["*"]
+    expose_headers    = []
+    max_age           = 86400
+  }
+}

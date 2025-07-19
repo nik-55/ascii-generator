@@ -1,0 +1,4 @@
+aws lambda update-function-code --profile builder \
+  --function-name ascii-generator-function \
+  --s3-bucket ascii-generator-123 \
+  --s3-key ascii-lambda.zip

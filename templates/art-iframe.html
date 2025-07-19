@@ -11,8 +11,9 @@
             padding: 0;
             box-sizing: border-box;
         }
-    
-        html, body {
+
+        html,
+        body {
             height: 100%;
             width: 100%;
         }
@@ -40,24 +41,56 @@
             font-size: 0.1rem;
             line-height: 1;
         }
-
     </style>
 </head>
 
 <body>
     <div>
-    <div class="grid" id="artGrid">
-        {% for row in range(128) %}
-        {% for col in range(128) %}
-        <div class="grid-item" data-char="" 
-        style="color: rgb({{clr_arr[row][col][0]}}, {{clr_arr[row][col][1]}}, {{clr_arr[row][col][2]}})">
-           {{ art[row][col] }}
-        </div>
-        {% endfor %}
-        {% endfor %}
-    </div>
+        <div class="grid mt-4" id="artGrid">
 
-</div>
+        </div>
+    </div>
+    <script>
+        const queryparams = new URLSearchParams(window.location.search);
+        const key = queryparams.get('key');
+        const s3_base_url = 'https://ascii-generator-123.s3.ap-south-1.amazonaws.com/gallery-view/';
+
+        async function animateGrid() {
+            const res = await fetch(`${s3_base_url}${key}/context.json`);
+            const data = await res.json();
+            const gray_array = data.gray_array;
+            const colored_array = data.colored_array;
+
+            const grid = document.getElementById('artGrid');
+            grid.innerHTML = ''; // Clear existing content
+
+            for (let i = 0; i < 128; i++) {
+                for (let j = 0; j < 128; j++) {
+                    const item = document.createElement('div');
+                    item.className = 'grid-item';
+                    item.setAttribute('data-char', gray_array[i][j]);
+                    item.setAttribute('data-clr', `rgb(${colored_array[i][j][0]}, ${colored_array[i][j][1]}, ${colored_array[i][j][2]})`);
+                    grid.appendChild(item);
+                }
+            }
+
+            const gridItems = document.querySelectorAll('.grid-item');
+
+            for (let i = 0; i < gridItems.length; i++) {
+                const item = gridItems[i];
+                const targetChar = item.getAttribute('data-char') || ' ';
+                item.textContent = targetChar;
+            }
+
+            for (let i = 0; i < gridItems.length; i++) {
+                const item = gridItems[i];
+                const clr = item.getAttribute('data-clr');
+                item.style.color = clr;
+            }
+        }
+
+        window.onload = animateGrid;
+    </script>
 </body>
 
 </html>

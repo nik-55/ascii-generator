@@ -6,15 +6,13 @@ import requests
 import os
 
 from jinja2 import Environment, FileSystemLoader
-from fastapi.responses import Response
-from pydantic_settings import BaseSettings, SettingsConfigDict
 
 from prompt import modify_system_prompt
 from rate import S3Uploader, s3_base_url, session, is_rate_limited
 from utils import ascii_generator
 
 
-class Settings(BaseSettings):
+class Settings:
     GEMINI_API_KEY: str = os.getenv("GEMINI_API_KEY", "")
 
 
@@ -22,60 +20,50 @@ settings = Settings()
 env = Environment(loader=FileSystemLoader("templates"))
 
 
-# "/gallery"
-def gallery(
-    event,
-    context,
-):
+def gallery():
     s3 = session.client("s3", region_name="ap-south-1")
     response = s3.list_objects_v2(Bucket="ascii-generator-123", Prefix="gallery-view/")
 
-    all_keys = [
-        obj["Key"].replace("/data.json", "")
+    keys = [
+        obj["Key"].replace("gallery-view/", "").replace("/data.json", "")
         for obj in response.get("Contents", [])
         if obj["Key"].endswith("data.json")
     ]
 
-    data = []
-    for key in all_keys:
-        res = s3.get_object(Bucket="ascii-generator-123", Key=f"{key}/data.json")
-        data_json = json.loads(res["Body"].read().decode("utf-8"))
-        prompt = data_json["prompt"]
-
-        key = f"{s3_base_url}/{key}"
-
-        data.append(
+    return {
+        "statusCode": 200,
+        "headers": {
+            "Content-Type": "application/json",
+            "Cache-Control": "public, max-age=200",
+        },
+        "body": json.dumps(
             {
-                "prompt": prompt,
-                "original_img_path": f"{key}/img.png",
-                "art_html_path": f"{key}/art-show.html",
-                "ascii_art_path": f"{key}/ascii_art.txt",
-                "art_iframe_html_path": f"{key}/art-iframe.html",
+                "keys": keys,
             }
-        )
+        ),
+    }
 
-    return data
 
-
-# /generate/
 def generate_ascii_art(
-    event,
-    context,
+    headers,
+    http,
+    body,
 ):
-    x_forwarded_for = event.get("headers", {}).get("X-Forwarded-For")
+    x_forwarded_for = headers.get("X-Forwarded-For")
     ip = (
         x_forwarded_for.split(",")[0].strip()
         if x_forwarded_for
-        else event.get("requestContext", {}).get("identity", {}).get("sourceIp")
+        else http.get("sourceIp")
     )
 
     if is_rate_limited(ip):
-        return Response(
-            "You have exceeded rate limit ;-; Please try again later.",
-            status_code=429,
-        )
+        return {
+            "statusCode": 429,
+            "headers": {"Content-Type": "text/plain"},
+            "body": "You have exceeded rate limit ;-; Please try again later.",
+        }
 
-    prompt = json.loads(event.get("body", {})).get("prompt", "").strip()
+    prompt = body.get("prompt", "").strip()
 
     if not prompt:
         return {
@@ -146,44 +134,41 @@ def generate_ascii_art(
     with open(f"/tmp/img.png", "wb") as f:
         f.write(base64.b64decode(base64_str))
 
-    art, clr_array, clr_str = ascii_generator(f"/tmp/img.png")
-    art_arr = [list(line) for line in art.split("\n")]
+    gray_str, colored_array, colored_str = ascii_generator(f"/tmp/img.png")
+    gray_array = [list(line) for line in gray_str.split("\n")]
 
     context = {
-        "art": art_arr,
-        "clr_arr": clr_array,
+        "gray_array": gray_array,
+        "colored_array": colored_array,
         "prompt": prompt,
-        "ascii_art_path": f"/gallery-view/{day_of_month}/{img_id}/ascii_art.txt",
+        "id": f"{day_of_month}/{img_id}",
     }
 
-    html_str = env.get_template("art.html").render(context)
-
     s3_uploader.upload_file(
-        content=html_str.encode("utf-8"),
-        s3_key=f"gallery-view/{day_of_month}/{img_id}/art-show.html",
-        extra_args={"ContentType": "text/html"},
-    )
-
-    html_str = html_str.replace("await new Promise(res => setTimeout(res, delay));", "")
-
-    s3_uploader.upload_file(
-        content=html_str.encode("utf-8"),
-        s3_key=f"gallery-view/{day_of_month}/{img_id}/art.html",
-        extra_args={"ContentType": "text/html"},
+        content=colored_str.encode("utf-8"),
+        s3_key=f"gallery-view/{day_of_month}/{img_id}/art-colored.txt",
+        extra_args={
+            "ContentType": "text/plain",
+            "CacheControl": "public, max-age=31536000, immutable",
+        },
     )
 
     s3_uploader.upload_file(
-        content=clr_str.encode("utf-8"),
-        s3_key=f"gallery-view/{day_of_month}/{img_id}/ascii_art.txt",
-        extra_args={"ContentType": "text/plain"},
+        content=gray_str.encode("utf-8"),
+        s3_key=f"gallery-view/{day_of_month}/{img_id}/art-gray.txt",
+        extra_args={
+            "ContentType": "text/plain",
+            "CacheControl": "public, max-age=31536000, immutable",
+        },
     )
 
-    iframe_html_str = env.get_template("art-iframe.html").render(context)
-
     s3_uploader.upload_file(
-        content=iframe_html_str.encode("utf-8"),
-        s3_key=f"gallery-view/{day_of_month}/{img_id}/art-iframe.html",
-        extra_args={"ContentType": "text/html"},
+        content=json.dumps(context).encode("utf-8"),
+        s3_key=f"gallery-view/{day_of_month}/{img_id}/context.json",
+        extra_args={
+            "ContentType": "application/json",
+            "CacheControl": "public, max-age=31536000, immutable",
+        },
     )
 
     return {
@@ -191,7 +176,7 @@ def generate_ascii_art(
         "headers": {"Content-Type": "application/json"},
         "body": json.dumps(
             {
-                "url": f"{s3_base_url}/gallery-view/{day_of_month}/{img_id}/art-show.html",
+                "id": f"{day_of_month}/{img_id}",
             }
         ),
     }
